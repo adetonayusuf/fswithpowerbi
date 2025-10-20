@@ -1,29 +1,28 @@
 ## FINANCIAL STATEMENT WITH POWER BI
 
-### Resources provided
-- Complete complete transactional GL from the company's central database - accounting software
+### Source Data & Expectation
+- Complete transactional GL from the company's central database - accounting software
 - SQL & Power Query to create data model
 - Create DAX & power bi to create financial statement
 - Cube formular in excel to create alternative way to present financial statement
   
-
-  ### The power of creating the financial statement in power bi are
+### The power of creating the financial statement in power bi are;
   - Automate and visualise current reporting
   - Improve efficiency and reporting integrity
   - Develop new insights to provide a competitive advantage
   
- ### CFO points
+### To achieve
  - Choice of power bi is because it's more cost effective
  - Time pressure to deliver results
  - Many reports to automate
  - Current excel users need convincing to use Power BI
  
- ### Reason why buisness intelligence projects fail;
+### Reason why buisness intelligence projects fail;
  - Poor data quality
- - Lagos of focus on a specific objective
+ - Lack of focus on a specific objective
  - Stakeholders don't buy into the project because of there lack of trust in the data or the report been created.
  
- To ensure success we must consider the following;
+### To ensure success we must consider the following;
  - Deliver results quickly
  - Demonstrate real value
  - Narrow the scope of a single objective
@@ -32,24 +31,21 @@
  - Give excel users access to PBI data
  
 ### Preparing the FS with power bi. The data will be extracted from the company's database
- - SQL to extract data from database using Azure data studio(Use database documentation to create SQL quaries to access the information needed.)
+ - SQL to extract data from database using Azure data studio.
  - Use power query to import & transform the data before creating the data model(At this point we have a power bi model that can refresh data from the database)
- -Build Inome statement in power bi - using dax formulas
+ - Build Inome statement in power bi - using dax formulas
  - Build balance sheet in power bi - using dax formulas
  - Give then access to analyse the data in excel
- Financial Statements overview
- These three statements helps us measure the financial performace and health of a company
- - Income statement - Statement of Operation, Profit and Loss Statement P&L
-	- measure financial statement over a period of time(Revenues, Expenses, Profit or Loss)
-
-- Balance Sheet - Statement of Financial Position
-	- Gives the snapshot of assets, liabilities and equity at a specific point in time
-	
-- Statement of Cash flow - Cash flow statement
-  - Measures the movement of cash in and out of the buisness over a period of time( Operating, Investing & Financing)
-  
  
-The information in the 3 above financial reports can be use to create financial ratios which provide a further measures of financial performance about
+### Financial Statements overview
+ These three statements helps us measure the financial performace and health of a company
+ - Income statement - Statement of Operation, Profit and Loss Statement P&L measure financial statement over a period of time(Revenues, Expenses, Profit or Loss)
+
+- Balance Sheet - Statement of Financial Position - Gives the snapshot of assets, liabilities and equity at a specific point in time
+	
+- Statement of Cash flow - Cash flow statement - Measures the movement of cash in and out of the buisness over a period of time( Operating, Investing & Financing)
+  
+ ### The information in the 3 above financial reports can be use to create financial ratios which provide a further measures of financial performance about
 	- Liquidity
 	- Leverage
 	- Efficiency
@@ -118,119 +114,95 @@ Following the steps below
 - Connect to the database using the Power Query Editor in power bi
 - Navigate to the SQL view and load as a staging Query
 - Create the fact and dimension queries by referencing the staging query
-- Challenge - load and relate the queries to create the data model
-- Create a DAX measure to aggregate the GLTranAmount column
- 
- 
- - Connected to database to Power bi by using the credentials
+- Connected to database to Power bi by using the credentials
 		- server name
 		- Database name
 		- user name 
-		-password
-		
-	 after conencting to the database you picked the view created and click on transform data.
-	 
-	 Then we used the view created(staging query) to create the necessary Fact & dimtables
-	 
-	 Create data model in powerbi, baase on the tables imported into power bi. see below.
+		- password
+- After conencting to the database you picked the view created and click on transform data.
+- Then we used the view created(staging query) to create the necessary Fact & dimtables
+- Create data model in powerbi, baase on the tables imported into power bi. see below.
+
+  ![DM](https://github.com/adetonayusuf/fswithpowerbi/blob/main/Data%20modelling%20-%20DimHeader.png)
+  
 	 
 ### Building Income statement
-We started by populating the matrix table with year from DimDate and categoty from DimGLAccts
-then create a SumAmount measures using this DAX
-SumAmount = SUM(FactGL_Tran[GLTranAmount])
+I created the income statement in power bi by following the steps below;
+
+- I started by populating the matrix table with; 
+	- year from DimDate
+	- categoty from DimGLAccts 
+- Then create a SumAmount measures using this DAX - SumAmount = SUM(FactGL_Tran[GLTranAmount])
 	
-Though using FactGL_Tran[GLTranAmount] column directly in the matrix will give us the same value but
-best matrix is to use measures and it also help reduces the sizer of the report to avoid lagging.
-	
-To ensure consistency in the display of the items in the income statement, we need to build a custom headers tables.
-We can use the table to control the content and appearance of the financial statement. This custom headers table can control things like;
-	- Adding additional line items to the financial statemenmt
-	- Defining the sort order of the line items
-	- Defining which measures we want each line items to contains
-	- Defining the formatting of each line items
-	
-A well formatted custom header table is mostly created in excel, to align with the financial statement image we are trying to build.
+- Then add FactGL_Tran[GLTranAmount] column directly in the matrix, though it will give us the same value but best matrix is to use measures because it also help reduces the size of the report to avoid lagging.
+- To ensure consistency in the display of the items in the income statement, we need to build a custom headers tables.
+		- We can use the table to control the content and appearance of the financial statement. This custom headers table can control things like;
+			- Adding additional line items to the financial statemenmt
+			- Defining the sort order of the line items
+			- Defining which measures we want each line items to contains
+			- Defining the formatting of each line items
+		A well formatted custom header table is mostly created in excel, to align with the financial statement image we are trying to build.
+- Import the customer header table into Power query, then create a sort column to better arrange the rows in the financial statement, then create a relationship with DimGL in data model.
+- After then add SumAmount measures created to he matrix table, some rows were blank, which relates to balance sheet values.
+- I then created measures for Income Statement value - I/S Amount - I/S Amount = CALCULATE(ABS([SumAmount]), DimHeaders[Statement] = "Income Statement")
+- After adding the I/S Amount into the table, there were still some rows that were still blank, I created I/S subtotal measures to substract value of each row from each other
+		I/S Subtotal = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Sort] < MAX(DimHeaders[Sort])))
+- In a bid to combine both values in measures I/S amount and I/S subtotal amount, we created Income Statement measures making use of Switch(true) and selected value.
+		Income Statement = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal", [I/S Subtotal],
+		[	I/S Amount])
+- After adding the Income Statement measures into the matrix tables, the % rows were still blank. To fill in the blank rows, since each of the blank rows are % of revenue measures below
+		% of Revenue = 
+		var Revenue = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Category] = "Revenue"))
+		RETURN 
+		DIVIDE([I/S Subtotal], Revenue,0)
+		Once confirmed that it's working correctly, we can then incorporate it into Income Statement measure
 
-Import the customer header table into Power query, then create a sort column to better arrance the rows in the financial statement, 
-the create a relationship with DimGL in data model.
+		Income Statement = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal", [I/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Per_Of_Revenue", [% of Revenue],
+		[I/S Amount])
+	After updating the Income statement measures, the % rows appeared as numeric, i formatted the rows with below
 
-After using the SumAmount measures created to he matrix table, there was some blank rows with value, which relates to balance sheet values.
+	% of Revenue = FORMAT([Staging - % of Revenue], "0.00%").
+- Then add the year to the column back to the table, after then add the sub-category from the GLAcct table to the matrix table.
+  	Updated income statement measure to address the blank/rows not needed after adding the subcategory from DimGL table
+		Income Statement = 
+		var Display_Filtered = NOT ISFILTERED(DimGL_Accts[Subcategory])
+		RETURN
+		SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal" && Display_Filtered, [I/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Per_Of_Revenue" && Display_Filtered, [% of Revenue],
+		[I/S Amount])
+- After creating the Income statement in matris, I created a LastRefreshDate table from the staging data from SQL
+	mainly to show the date when the data was collected.
 
-Now we need to create measures for Income Statement value - I/S Amount
+### Then populate other visuals on the dashbaord
+- create Gros Margin Ratio measure to populate the card visual
+	Gross Margin Ratio = 
+	var Gross_Profit = CALCULATE([I/S Subtotal], DimHeaders[Category] = "Gross Profit")
+	var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
+	RETURN
+	DIVIDE(Gross_Profit, Revenue, 0)
 
-I/S Amount = CALCULATE(ABS([SumAmount]), DimHeaders[Statement] = "Income Statement")
+- Also created Operaring Margin Ratio measure to populate the last card
 
-After adding the I/S Amount into the table, there are still some rows that were still blank, I created I/S subtotal measures to substract value of each row from each other
-I/S Subtotal = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Sort] < MAX(DimHeaders[Sort])))
-
-In a bid to combine both values in measures I/S amount and I/S subtotal amount, we created Income Statement measures making use of Switch(true) and selected value.
-
-Income Statement = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal", [I/S Subtotal],
-[I/S Amount])
-
-After adding the Income Statement measures into the matrix tables, the % rows were still blank. To fill in the blank rows, since each of the blank rows are % of revenue measures below
-
-% of Revenue = 
-var Revenue = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Category] = "Revenue"))
-RETURN 
-DIVIDE([I/S Subtotal], Revenue,0)
-
-Once confirmed that it's working correctly, we can then incorporate it into Income Statement measure
-
-Income Statement = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal", [I/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Per_Of_Revenue", [% of Revenue],
-[I/S Amount])
-
-After updating the Income statement measures, the % rows appeared as numeric, i formatted the rows with below
-
-% of Revenue = FORMAT([Staging - % of Revenue], "0.00%").
-
-Then add the year to the column from DimDate table
-
-after then add the sub-category from the GLAcct table to the matrix table.
-
-
-Uodated income statement measure to address the blank/rows not needed after adding the subcategory from DimGL table
-
-Income Statement = 
-var Display_Filtered = NOT ISFILTERED(DimGL_Accts[Subcategory])
-RETURN
-SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal" && Display_Filtered, [I/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Per_Of_Revenue" && Display_Filtered, [% of Revenue],
-[I/S Amount])
-
-We have created the Income statement in matris, we need to create a LastRefreshDate table from the staging data from SQL
-mainly to show the date when the data was collected.
-
-Then populate other visuals on the dashbaord
-
-create Gros Margin Ratio measure to populate the card visual
-
-Gross Margin Ratio = 
-var Gross_Profit = CALCULATE([I/S Subtotal], DimHeaders[Category] = "Gross Profit")
-var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
-RETURN
-DIVIDE(Gross_Profit, Revenue, 0)
-
-Also created Operaring Margin Ratio measure to populate the last card
-
-Operating Margin Ratio = 
-var Operating_Margin = CALCULATE([I/S Subtotal], DimHeaders[Category] = "EBIT")
-var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
-RETURN
-DIVIDE(Operating_Margin, Revenue, 0)
+	Operating Margin Ratio = 
+	var Operating_Margin = CALCULATE([I/S Subtotal], DimHeaders[Category] = "EBIT")
+	var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
+	RETURN
+	DIVIDE(Operating_Margin, Revenue, 0)
 
 After then, populate the combo chart with Revenue and Gross Profit %.
 
 Below is the Income statememt we just created;
 
+![IS](https://github.com/adetonayusuf/fswithpowerbi/blob/main/Income%20Statement.png)
+
+![PnL.gif](https://github.com/adetonayusuf/fswithpowerbi/blob/main/PnL.gif)
 
 
-
-### Balance Sheet
+### Building Balance Sheet
 We start building the balance sheet by following the following steps;
 - Update the custom headers to include balance sheet items
 - Create the balance sheet in matrixtable
@@ -257,7 +229,7 @@ To populate the subtotal section, we start by creating a measures called B/S sub
 
 B/S Subtotal = CALCULATE([Cumulative Amount], ALL(DimHeaders), DimHeaders[Balance Sheet Section] in VALUES(DimHeaders[Balance Sheet Section]))
 
-Then create a measire that populate the whole balance sheet at once
+Then create a measure that populate the whole balance sheet at once
 
 Balance Sheet = SWITCH(TRUE(),
 SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
@@ -337,6 +309,23 @@ var TotalDebt = CALCULATE([Cumulative Amount], DimGL_Accts[Subcategory]= "Long-t
 var TotalAssets = CALCULATE([B/S Subtotal], DimHeaders[Category] = "Total Assets")
 Return
 DIVIDE(TotalDebt, TotalAssets,0)
+
+Below is the blance sheet created
+
+![BS Display](https://github.com/adetonayusuf/fswithpowerbi/blob/main/Bs%20display.png)
+
+![BS](https://github.com/adetonayusuf/fswithpowerbi/blob/main/balance%20sheet.png)
+
+
+## Contact
+
+Author: Yusuf Adetona
+
+Email: yustone003@yahoo.com
+
+LinkedIn: [Yusuf Adetona HND, BSc, AAT, ACA, ACCA(Dip IFRS)](https://www.linkedin.com/in/yusuf-adetona/)
+
+Portfolio: https://www.datascienceportfol.io/adetonayusuf
 
 
 #BIDA #CFI #PowerBI #FinancialStatementwithPowerBI
