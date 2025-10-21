@@ -6,13 +6,13 @@
 - Create DAX & power bi to create financial statement
 - Cube formular in excel to create alternative way to present financial statement
   
-### The power of creating the financial statement in power bi are;
+### The power of creating the financial statement in Power BI are;
   - Automate and visualise current reporting
   - Improve efficiency and reporting integrity
   - Develop new insights to provide a competitive advantage
   
 ### To achieve
- - Choice of power bi is because it's more cost effective
+ - Choice of power BI is because it's more cost effective
  - Time pressure to deliver results
  - Many reports to automate
  - Current excel users need convincing to use Power BI
@@ -62,8 +62,7 @@
 
 AS
 
-SELECT 
-
+	SELECT 
     --FactGLTran
     gl.FactGLTranID,
     gl.GLTranAmount,
@@ -96,7 +95,7 @@ SELECT
     --Last Refrsh Date
         CONVERT(datetime2, GETDATE() at time zone 'UTC' at time zone 'Central Standard Time') AS LastRefreshDate
 
-FROM FactGLTran as gl
+	FROM FactGLTran as gl
     INNER JOIN dimGLAcct AS acc ON gl.GLAcctID = acc.GLAcctID
     INNER JOIN dimStore AS sto ON gl.StoreID = sto.StoreID
     INNER JOIN dimRegion AS reg ON sto.RegionID = reg.RegionID
@@ -136,23 +135,29 @@ I created the income statement in power bi by following the steps below;
 	
 - Then add FactGL_Tran[GLTranAmount] column directly in the matrix, though it will give us the same value but best matrix is to use measures because it also help reduces the size of the report to avoid lagging.
 - To ensure consistency in the display of the items in the income statement, we need to build a custom headers tables.
-		- We can use the table to control the content and appearance of the financial statement. This custom headers table can control things like;
-			- Adding additional line items to the financial statemenmt
-			- Defining the sort order of the line items
-			- Defining which measures we want each line items to contains
-			- Defining the formatting of each line items
-		A well formatted custom header table is mostly created in excel, to align with the financial statement image we are trying to build.
+
+  		 We can use the table to control the content and appearance of the financial statement. This custom headers table can control things like;
+  	 			- Adding additional line items to the financial statemenmt
+  				- Defining the sort order of the line items
+  				- Defining which measures we want each line items to contains
+  				- Defining the formatting of each line items
+  		 A well formatted custom header table is mostly created in excel, to align with the financial statement image we are trying to build.
 - Import the customer header table into Power query, then create a sort column to better arrange the rows in the financial statement, then create a relationship with DimGL in data model.
 - After then add SumAmount measures created to he matrix table, some rows were blank, which relates to balance sheet values.
-- I then created measures for Income Statement value - I/S Amount - I/S Amount = CALCULATE(ABS([SumAmount]), DimHeaders[Statement] = "Income Statement")
+- I then created measures for Income Statement value - I/S Amount -
+
+  		I/S Amount = CALCULATE(ABS([SumAmount]), DimHeaders[Statement] = "Income Statement")
 - After adding the I/S Amount into the table, there were still some rows that were still blank, I created I/S subtotal measures to substract value of each row from each other
-		I/S Subtotal = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Sort] < MAX(DimHeaders[Sort])))
+
+  		I/S Subtotal = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Sort] < MAX(DimHeaders[Sort])))
 - In a bid to combine both values in measures I/S amount and I/S subtotal amount, we created Income Statement measures making use of Switch(true) and selected value.
-		Income Statement = SWITCH(TRUE(),
+
+  		Income Statement = SWITCH(TRUE(),
 		SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal", [I/S Subtotal],
 		[	I/S Amount])
 - After adding the Income Statement measures into the matrix tables, the % rows were still blank. To fill in the blank rows, since each of the blank rows are % of revenue measures below
-		% of Revenue = 
+
+  		% of Revenue = 
 		var Revenue = CALCULATE([I/S Amount], FILTER(ALL(DimHeaders), DimHeaders[Category] = "Revenue"))
 		RETURN 
 		DIVIDE([I/S Subtotal], Revenue,0)
@@ -164,34 +169,37 @@ I created the income statement in power bi by following the steps below;
 		[I/S Amount])
 	After updating the Income statement measures, the % rows appeared as numeric, i formatted the rows with below
 
-	% of Revenue = FORMAT([Staging - % of Revenue], "0.00%").
+		% of Revenue = FORMAT([Staging - % of Revenue], "0.00%").
 - Then add the year to the column back to the table, after then add the sub-category from the GLAcct table to the matrix table.
   	Updated income statement measure to address the blank/rows not needed after adding the subcategory from DimGL table
-		Income Statement = 
+
+  		Income Statement = 
 		var Display_Filtered = NOT ISFILTERED(DimGL_Accts[Subcategory])
 		RETURN
 		SWITCH(TRUE(),
 		SELECTEDVALUE(DimHeaders[MeasureName]) = "Subtotal" && Display_Filtered, [I/S Subtotal],
 		SELECTEDVALUE(DimHeaders[MeasureName]) = "Per_Of_Revenue" && Display_Filtered, [% of Revenue],
 		[I/S Amount])
+  
 - After creating the Income statement in matris, I created a LastRefreshDate table from the staging data from SQL
 	mainly to show the date when the data was collected.
 
 ### Then populate other visuals on the dashbaord
-- create Gros Margin Ratio measure to populate the card visual
-	Gross Margin Ratio = 
-	var Gross_Profit = CALCULATE([I/S Subtotal], DimHeaders[Category] = "Gross Profit")
-	var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
-	RETURN
-	DIVIDE(Gross_Profit, Revenue, 0)
+- Create Gross Margin Ratio measure to populate the card visual
+  
+		Gross Margin Ratio = 
+		var Gross_Profit = CALCULATE([I/S Subtotal], DimHeaders[Category] = "Gross Profit")
+		var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
+		RETURN
+		DIVIDE(Gross_Profit, Revenue, 0)
 
 - Also created Operaring Margin Ratio measure to populate the last card
 
-	Operating Margin Ratio = 
-	var Operating_Margin = CALCULATE([I/S Subtotal], DimHeaders[Category] = "EBIT")
-	var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
-	RETURN
-	DIVIDE(Operating_Margin, Revenue, 0)
+		Operating Margin Ratio = 
+		var Operating_Margin = CALCULATE([I/S Subtotal], DimHeaders[Category] = "EBIT")
+		var Revenue = CALCULATE([I/S Amount], DimHeaders[Category] = "Revenue")
+		RETURN
+		DIVIDE(Operating_Margin, Revenue, 0)
 
 After then, populate the combo chart with Revenue and Gross Profit %.
 
@@ -210,105 +218,105 @@ We start building the balance sheet by following the following steps;
 - Create a DAX measure that logically combines the staging measures in the balance sheet template
 - Complete other visuals and format the report
 
-Update the DimHeaders table with the balance sheet items
-Look through the steps on the Dimheaher table and click on the gear icon infront of navigation to imoport the updated headers table.
+- Update the DimHeaders table with the balance sheet items
+In power query look through the steps on the Dimheaher table and click on the gear icon infront of navigation to imoport the updated headers table.
+ 	Create B/S Amount measures, so that the table display value for only balance sheet items
 
-Create B/S Amount measures, so that the table display value for only balance sheet items
-B/S Amount = CALCULATE([SumAmount], DimHeaders[Statement] = "Balance Sheet")
+		- B/S Amount = CALCULATE([SumAmount], DimHeaders[Statement] = "Balance Sheet")
 
-One of the major differences between Income statement and balance sheet is that
-The income statement displays everything that happens over a particular accountingting period whereas the balance sheet is a single snapshot in time.
+- One of the major differences between Income statement and balance sheet is that
 
-The amount reported in balance sheet should include cumulative balance over the years during the company's existence. Hence the reason for the DAX measures below
+		- The income statement displays everything that happens over a particular accountingting period whereas the balance sheet is a single snapshot in time.
+		- The amount reported in balance sheet should include cumulative balance over the years during the company's existence. Hence the reason for the DAX measures below
+			Cumulative Amount = CALCULATE(ABS([B/S Amount]), FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])))
 
-Cumulative Amount = CALCULATE(ABS([B/S Amount]), FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])))
+	To dispay the cumulative balance of the financial position over the years.
 
-To dispay the cumulative balance of the financial position over the years.
+- To populate the subtotal section, we start by creating a measures called B/S subtotal
 
-To populate the subtotal section, we start by creating a measures called B/S subtotal
+		B/S Subtotal = CALCULATE([Cumulative Amount], ALL(DimHeaders), DimHeaders[Balance Sheet Section] in VALUES(DimHeaders[Balance Sheet Section]))
 
-B/S Subtotal = CALCULATE([Cumulative Amount], ALL(DimHeaders), DimHeaders[Balance Sheet Section] in VALUES(DimHeaders[Balance Sheet Section]))
+- Then create a measure that populate the whole balance sheet at once
 
-Then create a measure that populate the whole balance sheet at once
+		Balance Sheet = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
+		[Cumulative Amount])
 
-Balance Sheet = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
-[Cumulative Amount])
+- After adding the above DAX into the matrix table, 3 rows were still blank, they are Retained Earnings, Total Equity & Total Liabilities & Equity
+  On the Retained Earnings we start by creating Opening Retained Earnings
 
-After adding the above DAX into the matrix table, 3 rows were still blank, they are Retained Earnings, Total Equity & Total Liabilities & Equity
-On the Retained Earnings we start by creating Opening Retained Earnings
+		Opening Retianed Earnings = CALCULATE(ABS([SumAmount]),
+		FactGL_Tran[GLAcctNum] = 4100,
+		ALL(DimDate),
+		ALL(DimHeaders))
 
-Opening Retianed Earnings = CALCULATE(ABS([SumAmount]),
-FactGL_Tran[GLAcctNum] = 4100,
-ALL(DimDate),
-ALL(DimHeaders))
+	The current/yearly Retained earning is derived from the Income statement, we are bringing the Net Income from Income Statement to Balance sheet.
+    The Retained Earnings is the cummulative of yearly net income. Below is the Retained Earnings measures
 
-The current/yearly Retained earning is derived from the Income statement, we are bringing the Net Income from Income Statement to Balance sheet.
-The Retained Earnings is the cummulative of yearly net income. Below is the Retained Earnings measures
+		Retained Earnings = [Opening Retianed Earnings] +
+		CALCULATE( ABS([SumAmount]),
+		FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])),
+		FILTER(ALL(DimHeaders), DimHeaders[Statement] = "Income Statement"))
 
-Retained Earnings = [Opening Retianed Earnings] +
-CALCULATE( ABS([SumAmount]),
-FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])),
-FILTER(ALL(DimHeaders), DimHeaders[Statement] = "Income Statement"))
+    Then update the Balance SHeet measure with the Retained Earnings
 
-Then update the Balance SHeet measure with the Retained Earnings
+		Balance Sheet = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
+		[Cumulative Amount])
 
-Balance Sheet = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
-[Cumulative Amount])
+- Next item is Total Equity;
+  
+		Total Equity = [B/S Subtotal] + [Retained Earnings]
 
-Next item is Total Equity; Total Equity = [B/S Subtotal] + [Retained Earnings]
+  Updated Balance sheet measures 
 
-Updated Balance sheet measures 
+		Balance Sheet = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity", [Total Equity],
+		[Cumulative Amount])
 
-Balance Sheet = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity", [Total Equity],
-[Cumulative Amount])
+  Final item is the TotalLiabilities & Equity
 
-Final item is the TotalLiabilities & Equity
+		Total Liabilities & Equity = CALCULATE([Cumulative Amount], 
+		ALL(DimHeaders), DimHeaders[Balance Sheet Section] = "Total Liabilities" || 
+		DimHeaders[Balance Sheet Section] = "Total Equity") + [Retained Earnings]
 
-Total Liabilities & Equity = CALCULATE([Cumulative Amount], 
-ALL(DimHeaders), DimHeaders[Balance Sheet Section] = "Total Liabilities" || 
-DimHeaders[Balance Sheet Section] = "Total Equity") + [Retained Earnings]
+  updated balance sheet measures
 
-updated balance sheet measures
+		Balance Sheet = SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity", [Total Equity],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_LE", [Total Liabilities & Equity],
+		[Cumulative Amount])
 
-Balance Sheet = SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal", [B/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings", [Retained Earnings],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity", [Total Equity],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_LE", [Total Liabilities & Equity],
-[Cumulative Amount])
+- Add subtotal to the matrix table, to populate the subitem of each balance sheet items. After after the subcategory from DimGL_Accts table, some of the items were displaying incorrectly, we need to wrtie the measure beloow to correct the display issue
 
-Add subtotal to the matrix table, to populate the subitem of each balance sheet items.
-After after the subcategory from DimGL_Accts table, some of the items were displaying 
-incorrectly, we need to wrtie the measure beloow to correct the display issue
+		Balance Sheet = 
+		var Display_Filter = NOT ISFILTERED(DimGL_Accts[Subcategory])
+		RETURN
+		SWITCH(TRUE(),
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal" && Display_Filter, [B/S Subtotal],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings" && Display_Filter, [Retained Earnings],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity" && Display_Filter, [Total Equity],
+		SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_LE" && Display_Filter, [Total Liabilities & Equity],
+		[Cumulative Amount])
 
-Balance Sheet = 
-var Display_Filter = NOT ISFILTERED(DimGL_Accts[Subcategory])
-RETURN
-SWITCH(TRUE(),
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Section_Subtotal" && Display_Filter, [B/S Subtotal],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Retained_Earnings" && Display_Filter, [Retained Earnings],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_Equity" && Display_Filter, [Total Equity],
-SELECTEDVALUE(DimHeaders[MeasureName]) = "Total_LE" && Display_Filter, [Total Liabilities & Equity],
-[Cumulative Amount])
+- Then we create measures for other visuals in the dashboard
 
-Then we create measures for other visuals in the dashboard
-Current Ratio = 
-var CurrentAssets = CALCULATE([Cumulative Amount], DimHeaders[Category] = "Current Assets")
-var CurrentLiabilities = CALCULATE([Cumulative Amount], DimHeaders[Category] = "Current Liabilities")
-return
-DIVIDE(CurrentAssets, CurrentLiabilities)
+		Current Ratio = 
+		var CurrentAssets = CALCULATE([Cumulative Amount], DimHeaders[Category] = "Current Assets")
+		var CurrentLiabilities = CALCULATE([Cumulative Amount], DimHeaders[Category] = "Current Liabilities")
+		return
+		DIVIDE(CurrentAssets, CurrentLiabilities)
 
-Debt Ratio = 
-var TotalDebt = CALCULATE([Cumulative Amount], DimGL_Accts[Subcategory]= "Long-term debt")
-var TotalAssets = CALCULATE([B/S Subtotal], DimHeaders[Category] = "Total Assets")
-Return
-DIVIDE(TotalDebt, TotalAssets,0)
+		Debt Ratio = 
+		var TotalDebt = CALCULATE([Cumulative Amount], DimGL_Accts[Subcategory]= "Long-term debt")
+		var TotalAssets = CALCULATE([B/S Subtotal], DimHeaders[Category] = "Total Assets")
+		Return
+		DIVIDE(TotalDebt, TotalAssets,0)
 
 Below is the blance sheet created
 
